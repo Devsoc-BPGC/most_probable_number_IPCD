@@ -1,4 +1,5 @@
-To run execute 
+This is the api for the MPN image calculation
 
-pip install -r requirements.txt <br/>
-python3 app.py
+Run the following:  
+> pip install -r requirements.txt  
+> python3 app.py
