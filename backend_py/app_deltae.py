@@ -106,7 +106,7 @@ def prompt():
         
         def distance(colora,colorb):
             delta_E = colour.delta_E(colora, colorb)
-            if (delta_E <= 1):
+            if (delta_E > 5):
                 return True
 
                 # <= 1.0	Not perceptible by human eyes.
