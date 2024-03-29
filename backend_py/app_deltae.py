@@ -105,7 +105,9 @@ def prompt():
 
         
         def distance(colora,colorb):
-            delta_E = colour.delta_E(colora, colorb)
+            lab1 = [colora]
+            lab2 = [colorb]
+            delta_E = colour.delta_E(lab1, lab2)
             if (delta_E > 5):
                 return True
 
@@ -125,7 +127,6 @@ def prompt():
             if metric == 'hsv':
                 c1 = h_vals[0]
                 c2 = h_vals[1]
-
                 r1 = 0
                 r2 = 0
                 r3 = 0
@@ -280,11 +281,7 @@ def prompt():
                 # print("tube"+str(i)+"hsv is"+str(average_color[0]))
 
             print(test_h_vals)
-            c1 = h_vals[0]
-            c2 = h_vals[3]
-            c3 = h_vals[12]
-            c4 = h_vals[15]
-
+            
             b1 = 0;t1 = 0
             b2 = 0;t2 = 0
             b3 = 0;t3 = 0
@@ -297,6 +294,10 @@ def prompt():
             tt4 = test_h_vals[4]
 
             if metric == 'hsv':
+                c1 = h_vals[0]
+                c2 = h_vals[3]
+                c3 = h_vals[12]
+                c4 = h_vals[15]
                 
                 for i in [1,2,6,7,8]:
                     if(c1-h_vals[i]>0):b1 = b1 + 1
@@ -314,21 +315,24 @@ def prompt():
 
             if metric == 'delta':
 
+                c1 = average_colors[0]
+                c2 = average_colors[3]
+                c3 = average_colors[12]
+                c4 = average_colors[15]
+
                 for i in [1,2,6,7,8]:
-                    if distance(h_vals[i],c2):b1 = b1 + 1
+                    if distance(average_colors[i],c1):b1 = b1 + 1
                 for i in [4,5,9,10,11]:
-                    if distance(h_vals[i],c2):b2 = b2 + 1
+                    if distance(average_colors[i],c2):b2 = b2 + 1
                 for i in [13,14,18,19,20]:
-                    if distance(h_vals[i],c2):b3 = b3 + 1
+                    if distance(average_colors[i],c3):b3 = b3 + 1
                 for i in [16,17,21,22,23]:
-                    if distance(h_vals[i],c2):b4 = b4 + 1
+                    if distance(average_colors[i],c4):b4 = b4 + 1
 
                 if distance(tt0,tt1):t1=1
                 if distance(tt0,tt2):t2=1
                 if distance(tt0,tt3):t3=1
                 if distance(tt0,tt4):t4=1
-
-            
 
 
             bs = [b1,b2,b3,b4]

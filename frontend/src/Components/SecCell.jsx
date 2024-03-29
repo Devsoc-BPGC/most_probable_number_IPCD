@@ -6,6 +6,8 @@ import {
   Button,
   Divider,
   Image,
+  RadioGroup,
+  Radio,
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 
@@ -15,7 +17,16 @@ export default function SecCell() {
   const [isLoading, setIsLoading] = useState(false);
   const [img, setImg] = useState({});
   const [mpns, setMpns] = useState();
+  const [metric, setMetric] = useState('hsv');
   const user = JSON.parse(localStorage.getItem('user'));
+
+  const dispImgs = i => {
+    const keys = Object.keys(i);
+    keys.sort();
+    return keys.map((item, index) => (
+      <Image src={i[item]} boxSize={100} key={index} />
+    ));
+  };
 
   useEffect(() => {
     if (
@@ -37,6 +48,7 @@ export default function SecCell() {
           test2: imgs.img3,
           test3: imgs.img4,
           test4: imgs.img5,
+          metric: metric,
         }),
       })
         .then(res => res.text())
@@ -208,6 +220,12 @@ export default function SecCell() {
               }}
             />
           </FormControl>
+          <RadioGroup onChange={setMetric} value={metric} p={'1%'}>
+            <Radio value='hsv' marginRight={'2%'}>
+              HSV
+            </Radio>
+            <Radio value='delta'>Delta E</Radio>
+          </RadioGroup>
           <Flex justifyContent={'end'} p='2%'>
             <Button
               colorScheme='blue'
@@ -234,9 +252,12 @@ export default function SecCell() {
             <>
               <Flex direction={'column'} textAlign={'center'}>
                 <Flex>
-                  {Object.values(imgs).map((item, i) => (
+                  {
+                    /* {Object.values(imgs).map((item, i) => (
                     <Image src={item} boxSize={100} key={i} />
-                  ))}
+                  ))} */
+                    dispImgs(imgs)
+                  }
                 </Flex>
                 <Text fontSize={'xl'}>{time.toDateString()}</Text>
               </Flex>

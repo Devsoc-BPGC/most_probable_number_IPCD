@@ -8,12 +8,15 @@ import {
   Divider,
   Image,
   Text,
+  RadioGroup,
+  Radio,
 } from '@chakra-ui/react';
 
 const Cell = props => {
   const [isLoading, setIsLoading] = useState(false);
   const user = JSON.parse(localStorage.getItem('user'));
   const [mpn, setMpn] = useState(null);
+  const [metric, setMetric] = useState('hsv');
   const [form, setForm] = useState({
     constant: null,
     time: null,
@@ -41,6 +44,7 @@ const Cell = props => {
             exptmode: 'standard',
             userId: user.googleId,
             img: data.imageUrl,
+            metric: metric,
           }),
         })
           .then(res => res.text())
@@ -135,6 +139,17 @@ const Cell = props => {
               }}
             />
           </FormControl>
+          <RadioGroup
+            onChange={setMetric}
+            value={metric}
+            p={'2%'}
+            isDisabled={isComp}
+          >
+            <Radio value={'hsv'} marginRight={'2%'}>
+              HSV
+            </Radio>
+            <Radio value={'delta'}>Delta E</Radio>
+          </RadioGroup>
           <Flex justifyContent={'end'} p='2%'>
             <Button
               isLoading={isLoading}
