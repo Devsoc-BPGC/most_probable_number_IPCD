@@ -7,6 +7,8 @@ import os
 import numpy as np
 import json
 import urllib
+import colour
+
 
 # creating a Flask app
 app = Flask(__name__,static_folder='stylesheets')
@@ -31,6 +33,7 @@ def prompt():
         print(data_json)
         mode = data_json['exptmode']
         img_url = data_json['img']
+        metric = data_json['metric']
         print(img_url)
 
         h_vals = []
@@ -69,7 +72,11 @@ def prompt():
                 #roi  = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB) 
                 
                 ## converting bgr to rgb 
-                roi  = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV) 
+                if metric == 'hsv':
+                    roi  = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV) 
+                if metric == 'delta':
+                    roi  = cv2.cvtColor(roi, cv2.COLOR_BGR2Lab) 
+
 
                 # Calculate the average RGB value of the circular area in the current beaker
                 total_pixels = np.sum(mask[:, :, 0] > 0)
@@ -96,37 +103,74 @@ def prompt():
         time = datetime.datetime.now()
         cv2.imwrite(os.path.join('image_debug_logs' , f'img_{time}.png'), cropped_image)
 
-        # these 3 lines work
-        # response = make_response(jpeg.tobytes())
-        # response.headers['Content-Type'] = 'image/png'
-        # print(response.data)
-        # #return response
+        
+        def distance(colora,colorb):
+            lab1 = [colora]
+            lab2 = [colorb]
+            delta_E = colour.delta_E(lab1, lab2)
+            if (delta_E > 5):
+                return True
+
+                # <= 1.0	Not perceptible by human eyes.
+                # 1 - 2	Perceptible through close observation.
+                # 2 - 10	Perceptible at a glance.
+                # 11 - 49	Colors are more similar than opposite
+                # 100	Colors are exact opposite
+
+            return False
+
 
         #return send_file('static/Image/img.png', mimetype='image/gif')
         final_str = ""
         ## logic for counting row-wise light/dark
         if(mode=="standard"):
-            c1 = h_vals[0]
-            c2 = h_vals[1]
+            if metric == 'hsv':
+                c1 = h_vals[0]
+                c2 = h_vals[1]
+                r1 = 0
+                r2 = 0
+                r3 = 0
 
-            r1 = 0
-            r2 = 0
-            r3 = 0
+                for i in range(0,len(h_vals)):
+                    if(i>=6 and i<=10):
+                        # if(c1-h_vals[i]>0):
+                        if(h_vals[i]>(c2+7) or h_vals[i]<(c2-7)):
+                            r1 = r1 + 1
+                    if(i>=12 and i<=16):
+                        # if(c2-h_vals[i]>0):
+                        if(h_vals[i]>(c2+7) or h_vals[i]<(c2-7)):
+                            r2 = r2 + 1
+                    if(i>=18 and i<=22):
+                        # if(c2-h_vals[i]>0):
+                        if(h_vals[i]>(c2+7) or h_vals[i]<(c2-7)):
+                            r3 = r3 + 1
+                # print(r1, r2, r3)
+            if metric == 'delta':
+                lab_vals = average_colors
 
-            for i in range(0,len(h_vals)):
-                if(i>=6 and i<=10):
-                    # if(c1-h_vals[i]>0):
-                    if(h_vals[i]>(c2+7) or h_vals[i]<(c2-7)):
-                        r1 = r1 + 1
-                if(i>=12 and i<=16):
-                    # if(c2-h_vals[i]>0):
-                    if(h_vals[i]>(c2+7) or h_vals[i]<(c2-7)):
-                        r2 = r2 + 1
-                if(i>=18 and i<=22):
-                    # if(c2-h_vals[i]>0):
-                    if(h_vals[i]>(c2+7) or h_vals[i]<(c2-7)):
-                        r3 = r3 + 1
-            # print(r1, r2, r3)
+                c1 = lab_vals[0]
+                c2 = lab_vals[1]
+
+                r1 = 0
+                r2 = 0
+                r3 = 0
+
+                for i in range(0,len(h_vals)):
+                    if(i>=6 and i<=10):
+                        if distance(lab_vals[i],c2):
+                            r1 = r1 + 1
+                    if(i>=12 and i<=16):
+                        # if(c2-h_vals[i]>0):
+                        if distance(lab_vals[i],c2):
+                            r2 = r2 + 1
+                    if(i>=18 and i<=22):
+                        # if(c2-h_vals[i]>0):
+                        if distance(lab_vals[i],c2):
+                            r3 = r3 + 1
+
+
+
+
             ##mpn logic 
 
             mpn = 0
@@ -203,6 +247,7 @@ def prompt():
             links = [img_test0,img_test1,img_test2,img_test3,img_test4]
             tests = []
             test_h_vals = []
+            lab_vals = []
 
             for link in links:
                 url_response = urllib.request.urlopen(link)
@@ -217,19 +262,26 @@ def prompt():
                 y = int(test.shape[1] / 2)
 
                 roi = test[x-20:x+20, y-20:y+20]
-                roi  = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+                if metric == 'hsv':
+                    roi  = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV) 
+                if metric == 'delta':
+                    roi  = cv2.cvtColor(roi, cv2.COLOR_BGR2Lab) 
 
                 total_pixels = np.sum(roi[:, :, 0] > 0)
                 average_color = np.sum(roi, axis=(0, 1)) // total_pixels
-                test_h_vals.append(average_color[0])
+
+                if metric == 'hsv':
+                    test_h_vals.append(average_color[0]) 
+                if metric == 'delta':
+                    test_h_vals.append(average_color) 
+                
+                
+                
                 # print("tube"+str(i)+"hsv is"+str(average_color[0]))
 
             print(test_h_vals)
-            c1 = h_vals[0]
-            c2 = h_vals[3]
-            c3 = h_vals[12]
-            c4 = h_vals[15]
-
+            
             b1 = 0;t1 = 0
             b2 = 0;t2 = 0
             b3 = 0;t3 = 0
@@ -241,19 +293,46 @@ def prompt():
             tt3 = test_h_vals[3]
             tt4 = test_h_vals[4]
 
-            for i in [1,2,6,7,8]:
-                if(c1-h_vals[i]>0):b1 = b1 + 1
-            for i in [4,5,9,10,11]:
-                if(c2-h_vals[i]>0):b2 = b2 + 1
-            for i in [13,14,18,19,20]:
-                if(c3-h_vals[i]>0):b3 = b3 + 1
-            for i in [16,17,21,22,23]:
-                if(c4-h_vals[i]>0):b4 = b4 + 1
+            if metric == 'hsv':
+                c1 = h_vals[0]
+                c2 = h_vals[3]
+                c3 = h_vals[12]
+                c4 = h_vals[15]
+                
+                for i in [1,2,6,7,8]:
+                    if(c1-h_vals[i]>0):b1 = b1 + 1
+                for i in [4,5,9,10,11]:
+                    if(c2-h_vals[i]>0):b2 = b2 + 1
+                for i in [13,14,18,19,20]:
+                    if(c3-h_vals[i]>0):b3 = b3 + 1
+                for i in [16,17,21,22,23]:
+                    if(c4-h_vals[i]>0):b4 = b4 + 1
 
-            if(tt0-tt1>0):t1=1
-            if(tt0-tt2>0):t2=1
-            if(tt0-tt3>0):t3=1
-            if(tt0-tt4>0):t4=1
+                if(tt0-tt1>0):t1=1
+                if(tt0-tt2>0):t2=1
+                if(tt0-tt3>0):t3=1
+                if(tt0-tt4>0):t4=1
+
+            if metric == 'delta':
+
+                c1 = average_colors[0]
+                c2 = average_colors[3]
+                c3 = average_colors[12]
+                c4 = average_colors[15]
+
+                for i in [1,2,6,7,8]:
+                    if distance(average_colors[i],c1):b1 = b1 + 1
+                for i in [4,5,9,10,11]:
+                    if distance(average_colors[i],c2):b2 = b2 + 1
+                for i in [13,14,18,19,20]:
+                    if distance(average_colors[i],c3):b3 = b3 + 1
+                for i in [16,17,21,22,23]:
+                    if distance(average_colors[i],c4):b4 = b4 + 1
+
+                if distance(tt0,tt1):t1=1
+                if distance(tt0,tt2):t2=1
+                if distance(tt0,tt3):t3=1
+                if distance(tt0,tt4):t4=1
 
 
             bs = [b1,b2,b3,b4]
